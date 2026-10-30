@@ -17,7 +17,7 @@ OLD = 40  # delivered 40 days ago, outside it
     lambda ctx, no: get_order(ctx, no),
     lambda ctx, no: cancel_order(ctx, no),
     lambda ctx, no: request_return(ctx, no, ["CLOTH-TEE-M"], "Too big"),
-])
+], ids=["get_order", "cancel_order", "request_return"])
 def test_other_users_orders_look_exactly_like_missing_ones(ann, ben, call):
     bens_order = order_no(ben, "delivered", RECENT)
     assert call(ann, bens_order) == call(ann, "ORD-000000")
@@ -82,7 +82,7 @@ def test_get_order_shows_existing_return(ann):
     lambda no: f"  {no} ",             # extra spaces
     lambda no: no[4:],                 # 482913
     lambda no: no.replace("-", " "),   # ORD 482913
-])
+], ids=["exact", "lowercase", "spaces", "digits_only", "space_not_dash"])
 def test_order_number_spellings(ann, spell):
     real = order_no(ann, "placed")
     assert get_order(ann, spell(real))["data"]["order_no"] == real
