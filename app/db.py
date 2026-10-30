@@ -24,3 +24,7 @@ def ensure_indexes(db: Database) -> None:
     db.orders.create_index([("user_id", ASCENDING), ("placed_at", DESCENDING)])
     db.return_requests.create_index("order_no")
     db.return_requests.create_index("status")
+    # No TTL index on pending_actions: we keep finished ones as an audit trail,
+    # and the code checks expires_at itself.
+    db.pending_actions.create_index([("user_id", ASCENDING), ("order_no", ASCENDING), ("status", ASCENDING)])
+    db.tickets.create_index([("user_id", ASCENDING), ("created_at", DESCENDING)])

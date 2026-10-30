@@ -25,6 +25,8 @@ class Settings:
     auto_approve_refund_limit: float
     max_tool_calls_per_turn: int
     history_messages: int
+    pending_action_ttl_minutes: int
+    max_tickets_per_day: int
 
 
 @lru_cache
@@ -43,4 +45,6 @@ def get_settings() -> Settings:
         auto_approve_refund_limit=float(os.getenv("AUTO_APPROVE_REFUND_LIMIT", "100")),
         max_tool_calls_per_turn=int(os.getenv("MAX_TOOL_CALLS_PER_TURN", "5")),
         history_messages=int(os.getenv("HISTORY_MESSAGES", "12")),
+        pending_action_ttl_minutes=int(os.getenv("PENDING_ACTION_TTL_MINUTES", "5")),
+        max_tickets_per_day=int(os.getenv("MAX_TICKETS_PER_DAY", "3")),
     )

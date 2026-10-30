@@ -43,14 +43,14 @@ def test_return_window_cases_exist(db):
 
 
 def test_recent_order_covers_both_refund_paths(db):
-    """One cheap item is auto-approvable, all returnable items need admin review."""
+    """One cheap item line is auto-approvable, all returnable items need admin review."""
     _, orders = _seed(db)
     order = _delivered_days_ago(orders, 3)[0]
     limit = get_settings().auto_approve_refund_limit
     returnable = [i for i in order["items"] if i["returnable"]]
 
     assert any(not i["returnable"] for i in order["items"])
-    assert min(i["price"] for i in returnable) < limit
+    assert min(i["price"] * i["qty"] for i in returnable) < limit
     assert sum(i["price"] * i["qty"] for i in returnable) > limit
 
 

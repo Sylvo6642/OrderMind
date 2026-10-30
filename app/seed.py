@@ -23,7 +23,7 @@ ORDER_TEMPLATES: list[dict] = [
      "items": [line_item("ELEC-HDPHN-01")]},
     {"status": "shipped", "placed": 5, "eta_in": 1,
      "items": [line_item("BOOK-PYTHON-01"), line_item("BOOK-NOVEL-01", 2)]},
-    # Inside the return window. One T-shirt (19.99) is under the auto-approve
+    # Inside the return window. Both T-shirts (39.98) are under the auto-approve
     # limit; jacket plus both T-shirts (129.97) is over it. Earbuds are not returnable.
     {"status": "delivered", "placed": 7, "delivered": 3,
      "items": [line_item("CLOTH-JACKET-L"), line_item("CLOTH-TEE-M", 2), line_item("ELEC-EARBUDS-01")]},
