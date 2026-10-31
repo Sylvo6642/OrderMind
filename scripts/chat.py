@@ -3,7 +3,8 @@
     python -m scripts.chat alice@demo.local
 
 Commands: /new starts a new conversation, /quit exits.
-Confirm and Cancel buttons arrive in Stage 4; until then this script asks you.
+Instead of Confirm and Cancel buttons this script asks you. It runs the same
+code as POST /actions/{id}/confirm and /cancel.
 """
 import getpass
 import os
@@ -13,10 +14,10 @@ from datetime import datetime, timezone
 
 import anthropic
 
-from app.actions import cancel_action, confirm_action
 from app.agent import handle_message
+from app.chat import press_button
 from app.context import ToolContext
-from app.conversations import action_note, add_message, start_conversation
+from app.conversations import start_conversation
 from app.db import ensure_indexes, get_db
 from app.security import verify_password
 
@@ -39,12 +40,8 @@ def ask_about(ctx: ToolContext, proposal: dict) -> None:
     if choice not in ("c", "x"):
         print("  Skipped. It expires on its own.\n")
         return
-    ctx = replace(ctx, now=now())
-    confirmed = choice == "c"
-    outcome = confirm_action(ctx, proposal["action_id"]) if confirmed else cancel_action(ctx, proposal["action_id"])
+    outcome = press_button(replace(ctx, now=now()), proposal["action_id"], confirmed=choice == "c")
     print(f"  {'Done' if outcome['ok'] else 'Not done'}: {outcome.get('data') or outcome.get('message')}\n")
-    if outcome["ok"] or confirmed:  # tell Claude what happened on its next turn
-        add_message(ctx.db, ctx.conversation_id, "system", action_note(proposal, outcome, confirmed), ctx.now)
 
 
 def main() -> None:

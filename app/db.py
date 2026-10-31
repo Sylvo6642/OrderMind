@@ -28,3 +28,5 @@ def ensure_indexes(db: Database) -> None:
     # and the code checks expires_at itself.
     db.pending_actions.create_index([("user_id", ASCENDING), ("order_no", ASCENDING), ("status", ASCENDING)])
     db.tickets.create_index([("user_id", ASCENDING), ("created_at", DESCENDING)])
+    db.tickets.create_index("status")
+    db.conversations.create_index([("user_id", ASCENDING), ("updated_at", DESCENDING)])

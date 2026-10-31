@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OrderMind admin</title>
+<style>
+  body { font: 15px/1.45 system-ui, sans-serif; margin: 0; background: #f5f6f8; color: #1d2330; }
+  header { background: #1d2330; color: #fff; padding: 14px 24px; display: flex; justify-content: space-between; align-items: center; }
+  main { max-width: 1100px; margin: 0 auto; padding: 24px; }
+  section { background: #fff; border: 1px solid #dde1e7; border-radius: 8px; padding: 16px 20px; margin-bottom: 24px; }
+  h2 { margin: 0 0 12px; font-size: 17px; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 8px 6px; border-top: 1px solid #eceef2; vertical-align: top; }
+  th { font-size: 12px; text-transform: uppercase; color: #6b7280; border-top: 0; }
+  input { font: inherit; padding: 6px 8px; border: 1px solid #c9ced6; border-radius: 6px; }
+  button { font: inherit; padding: 6px 12px; border: 0; border-radius: 6px; cursor: pointer; margin-right: 4px; }
+  .approve { background: #1f8a4c; color: #fff; } .reject { background: #b42318; color: #fff; }
+  .plain { background: #e5e7eb; } .muted { color: #6b7280; } .error { color: #b42318; }
+  #login { max-width: 360px; margin: 60px auto; }
+  #login input { display: block; width: 100%; box-sizing: border-box; margin-bottom: 10px; }
+</style>
+</head>
+<body>
+<header><strong>OrderMind admin</strong><span id="who" class="muted"></span></header>
+<main>
+  <section id="login">
+    <h2>Admin login</h2>
+    <form id="login-form">
+      <input id="email" type="email" placeholder="Email" autocomplete="username" required>
+      <input id="password" type="password" placeholder="Password" autocomplete="current-password" required>
+      <button class="approve" type="submit">Log in</button>
+      <p id="login-error" class="error"></p>
+    </form>
+  </section>
+  <div id="panel" hidden>
+    <section>
+      <h2>Returns waiting for review</h2>
+      <table><thead><tr><th>Order</th><th>Customer</th><th>Items</th><th>Refund</th><th>Reason</th><th>Decision</th></tr></thead>
+      <tbody id="returns"></tbody></table>
+    </section>
+    <section>
+      <h2>Open support tickets</h2>
+      <table><thead><tr><th>Ticket</th><th>Customer</th><th>Summary</th><th>Opened</th><th></th></tr></thead>
+      <tbody id="tickets"></tbody></table>
+    </section>
+    <p id="panel-error" class="error"></p>
+  </div>
+</main>
+<script>
+// Customer text (reasons, ticket summaries, product names) is shown with textContent only,
+// never innerHTML, so text written by a customer cannot run as code in the admin's browser.
+let token = null;  // kept in memory only: closing the tab logs out
+
+async function api(method, path, body) {
+  const response = await fetch(path, {
+    method,
+    headers: { "Content-Type": "application/json", ...(token ? { Authorization: "Bearer " + token } : {}) },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(typeof data.detail === "string" ? data.detail : "Request failed (" + response.status + ")");
+  return data;
+}
+
+function el(tag, text, className) {
+  const node = document.createElement(tag);
+  if (text !== undefined) node.textContent = text;
+  if (className) node.className = className;
+  return node;
+}
+
+function row(cells) {
+  const tr = el("tr");
+  for (const cell of cells) {
+    const td = el("td");
+    if (cell instanceof Node) td.append(cell); else td.textContent = cell;
+    tr.append(td);
+  }
+  return tr;
+}
+
+const day = iso => iso.slice(0, 10);
+const showError = message => { document.getElementById("panel-error").textContent = message; };
+
+async function act(method, path, body) {
+  showError("");
+  try { await api(method, path, body); } catch (e) { showError(e.message); }
+  await load();
+}
+
+async function load() {
+  const [returns, tickets] = await Promise.all([api("GET", "/admin/returns"), api("GET", "/admin/tickets")]);
+
+  const returnRows = document.getElementById("returns");
+  returnRows.replaceChildren();
+  for (const r of returns) {
+    const note = el("input"); note.placeholder = "Reason (needed to reject)";
+    const approve = el("button", "Approve", "approve");
+    approve.onclick = () => act("POST", `/admin/returns/${r.id}/approve`, { note: note.value });
+    const reject = el("button", "Reject", "reject");
+    reject.onclick = () => act("POST", `/admin/returns/${r.id}/reject`, { note: note.value });
+    const decision = el("div"); decision.append(note, el("br"), approve, reject);
+    returnRows.append(row([r.order_no, r.customer, r.items.join(", "), "$" + r.amount.toFixed(2), r.reason, decision]));
+  }
+  if (!returns.length) returnRows.append(row([el("span", "Nothing to review.", "muted")]));
+
+  const ticketRows = document.getElementById("tickets");
+  ticketRows.replaceChildren();
+  for (const t of tickets) {
+    const close = el("button", "Close", "plain");
+    close.onclick = () => act("POST", `/admin/tickets/${t.id}/close`, {});
+    ticketRows.append(row([t.ticket_no, t.customer, t.summary, day(t.created_at), close]));
+  }
+  if (!tickets.length) ticketRows.append(row([el("span", "No open tickets.", "muted")]));
+}
+
+document.getElementById("login-form").onsubmit = async event => {
+  event.preventDefault();
+  const error = document.getElementById("login-error");
+  error.textContent = "";
+  try {
+    token = (await api("POST", "/auth/login", {
+      email: document.getElementById("email").value,
+      password: document.getElementById("password").value,
+    })).access_token;
+    const me = await api("GET", "/me");
+    if (!me.is_admin) { token = null; throw new Error("This account is not an admin."); }
+    document.getElementById("who").textContent = me.email;
+    document.getElementById("login").hidden = true;
+    document.getElementById("panel").hidden = false;
+    await load();
+  } catch (e) {
+    error.textContent = e.message;
+  }
+};
+</script>
+</body>
+</html>

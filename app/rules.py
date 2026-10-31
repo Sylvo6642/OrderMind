@@ -37,7 +37,7 @@ def clean_skus(raw) -> list[str] | None:
 
 def check_return(order: dict, item_skus: list[str] | None, now: datetime) -> dict | None:
     order_no = order["order_no"]
-    if order["status"] in ("return_requested", "returned"):
+    if order["status"] in ("return_requested", "returned", "return_rejected"):
         return fail("not_allowed", f"Order {order_no} already has a return. Only one return per order is allowed.")
     if order["status"] != "delivered":
         return fail("not_allowed", f"Order {order_no} is {order['status']}. Only delivered orders can be returned.")

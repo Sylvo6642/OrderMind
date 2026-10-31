@@ -9,7 +9,7 @@ from typing import Literal, NotRequired, TypedDict
 from bson import ObjectId
 
 OrderStatus = Literal[
-    "placed", "processing", "shipped", "delivered", "cancelled", "return_requested", "returned"
+    "placed", "processing", "shipped", "delivered", "cancelled", "return_requested", "returned", "return_rejected"
 ]
 ORDER_STATUSES: tuple[str, ...] = OrderStatus.__args__
 
@@ -77,6 +77,8 @@ class ReturnRequest(TypedDict):
     status: ReturnStatus
     decided_by: str | None  # "auto" or an admin email
     created_at: datetime
+    decided_at: NotRequired[datetime]  # set when an admin approves or rejects
+    decision_note: NotRequired[str]  # the admin's reason, required for a rejection
 
 
 ActionStatus = Literal["pending", "executing", "done", "failed", "cancelled", "expired", "superseded"]
@@ -105,6 +107,9 @@ class Ticket(TypedDict):
     summary: str
     status: Literal["open", "closed"]
     created_at: datetime
+    closed_by: NotRequired[str]  # admin email
+    closed_at: NotRequired[datetime]
+    close_note: NotRequired[str]
 
 
 def empty_memory_profile() -> MemoryProfile:
