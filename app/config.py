@@ -19,6 +19,8 @@ class Settings:
     jwt_secret: str
     jwt_expire_minutes: int
     anthropic_model: str
+    anthropic_effort: str  # low | medium | high; thinking depth and token spend
+    anthropic_max_tokens: int  # thinking counts toward this on Haiku 5.5
 
     # Business rules
     return_window_days: int
@@ -41,6 +43,8 @@ def get_settings() -> Settings:
         jwt_secret=jwt_secret,
         jwt_expire_minutes=int(os.getenv("JWT_EXPIRE_MINUTES", "60")),
         anthropic_model=os.getenv("ANTHROPIC_MODEL", "claude-haiku-5-5"),
+        anthropic_effort=os.getenv("ANTHROPIC_EFFORT", "low"),
+        anthropic_max_tokens=int(os.getenv("ANTHROPIC_MAX_TOKENS", "4096")),
         return_window_days=int(os.getenv("RETURN_WINDOW_DAYS", "14")),
         auto_approve_refund_limit=float(os.getenv("AUTO_APPROVE_REFUND_LIMIT", "100")),
         max_tool_calls_per_turn=int(os.getenv("MAX_TOOL_CALLS_PER_TURN", "5")),

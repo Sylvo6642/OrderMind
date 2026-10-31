@@ -73,11 +73,11 @@ def order_detail(ctx: ToolContext, order: dict) -> dict:
     return detail
 
 
-def list_orders(ctx: ToolContext, status: str | None = None) -> dict:
+def list_orders(ctx: ToolContext, status: str = "any") -> dict:
     query = {"user_id": ctx.user_id}
-    if status is not None:
+    if status not in (None, "any"):
         if status not in ORDER_STATUSES:
-            return fail("invalid_argument", f"status must be one of: {', '.join(ORDER_STATUSES)}.")
+            return fail("invalid_argument", f"status must be 'any' or one of: {', '.join(ORDER_STATUSES)}.")
         query["status"] = status
     orders = [order_summary(o) for o in ctx.db.orders.find(query).sort("placed_at", -1)]
     return ok({"count": len(orders), "orders": orders})

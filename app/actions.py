@@ -37,6 +37,8 @@ def propose_action(ctx: ToolContext, action_type: str, order_no: str, params: di
     return ok({
         "needs_confirmation": True,
         "action_id": str(action["_id"]),
+        "action": action_type,
+        "order_no": order_no,
         "summary": summary,
         "expires_in_minutes": ttl,
         "note": "Nothing has changed yet. The user must press Confirm in the chat. Do not say it is done.",
