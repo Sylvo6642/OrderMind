@@ -58,13 +58,17 @@ def action_note(proposal: dict, outcome: dict, confirmed: bool) -> str:
     amounts, error codes), never from product names or other stored text.
     """
     action, order_no = proposal["action"], proposal["order_no"]
+    # Live testing showed Claude can mistake a note placed after the customer's message for
+    # text it wrote itself, so the note says who sent it and when the click happened.
+    button = "Confirm" if confirmed else "Cancel"
+    prefix = (f"Backend note from the store's system (not written by you): before their latest message, "
+              f"the customer pressed {button} for the {action} on order {order_no}.")
     if not confirmed:
-        return f"Backend note: the customer pressed Cancel. The {action} for order {order_no} was not carried out."
+        return f"{prefix} Nothing was changed."
     if not outcome["ok"]:
-        return (f"Backend note: the customer pressed Confirm, but the {action} for order {order_no} "
-                f"failed with error '{outcome['error']}'. Nothing was changed.")
+        return f"{prefix} It failed with error '{outcome['error']}'. Nothing was changed."
     data = outcome["data"]
     if action == "cancel_order":
-        return f"Backend note: order {order_no} is now cancelled. Refund: ${data['refund_amount']:.2f}."
-    return (f"Backend note: a return for order {order_no} was created with status "
-            f"'{data['return_status']}'. Refund amount: ${data['refund_amount']:.2f}.")
+        return f"{prefix} The order is now cancelled. Refund: ${data['refund_amount']:.2f}."
+    return (f"{prefix} The return was created with status '{data['return_status']}'. "
+            f"Refund amount: ${data['refund_amount']:.2f}.")

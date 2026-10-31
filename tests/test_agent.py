@@ -144,6 +144,18 @@ def test_confirm_note_reaches_the_next_turn_after_the_customer_message(chat):
     assert "is now cancelled" in client.requests[-1]["messages"][-1]["content"]
 
 
+@pytest.mark.parametrize("confirmed, ok", [(True, True), (True, False), (False, False)], ids=["done", "failed", "cancel"])
+def test_note_says_who_sent_it_and_when(confirmed, ok):
+    # Live Haiku took an unlabelled note for its own text and told the customer nothing had happened
+    proposal = {"action": "request_return", "order_no": "ORD-123456"}
+    outcome = ({"ok": True, "data": {"return_status": "auto_approved", "refund_amount": 39.98}} if ok
+               else {"ok": False, "error": "expired"})
+    note = action_note(proposal, outcome, confirmed)
+    assert "not written by you" in note
+    assert f"pressed {'Confirm' if confirmed else 'Cancel'}" in note and "ORD-123456" in note
+    assert ("39.98" in note) == ok and ("Nothing was changed" in note) == (not ok)
+
+
 def test_note_never_contains_product_names(chat):
     no = order_no(chat, "delivered", 3)
     proposal = {"action": "request_return", "order_no": no, "summary": "Return Rain Jacket ..."}
